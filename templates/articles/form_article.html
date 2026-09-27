@@ -1,0 +1,233 @@
+{% extends "base.html" %}
+{% load static %}
+{% block titre %}{{ titre_page }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.form-article-wrap { max-width: 860px; margin: 0 auto; }
+.form-section { background:#fff; border-radius:12px; box-shadow:0 2px 12px rgba(0,0,0,.07); padding:1.8rem; margin-bottom:1.5rem; }
+.form-section-title { font-size:.75rem; font-weight:700; text-transform:uppercase; letter-spacing:.1em; color:#888; margin-bottom:1.2rem; padding-bottom:.6rem; border-bottom:2px solid #f0f0f0; }
+#contenu-preview { min-height:200px; padding:1rem; border:1px solid #dee2e6; border-radius:8px; background:#fafafa; font-size:.95rem; line-height:1.8; }
+.word-count { font-size:.78rem; color:#999; }
+.tag-check-list { display:flex; flex-wrap:wrap; gap:.5rem; }
+.tag-check-list label { display:flex; align-items:center; gap:.4rem; background:#f1f3f5; padding:.3rem .75rem; border-radius:20px; cursor:pointer; font-size:.85rem; transition:background .2s; }
+.tag-check-list input:checked + span, .tag-check-list label:has(input:checked) { background:var(--primary); color:#fff; }
+.preview-img { max-height:200px; object-fit:cover; border-radius:8px; width:100%; margin-top:.8rem; display:none; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="container py-4">
+  <div class="form-article-wrap">
+
+    <!-- En-tête -->
+    <div class="d-flex align-items-center gap-3 mb-4">
+      <a href="{% url 'articles:mes_articles' %}" class="btn btn-sm btn-outline-secondary">
+        <i class="bi bi-arrow-left me-1"></i>Mes articles
+      </a>
+      <h1 class="page-title mb-0">{{ titre_page }}</h1>
+    </div>
+
+    <form method="post" enctype="multipart/form-data" novalidate>
+      {% csrf_token %}
+
+      {% if form.non_field_errors %}
+      <div class="alert alert-danger mb-3">{{ form.non_field_errors }}</div>
+      {% endif %}
+
+      <!-- Titre -->
+      <div class="form-section">
+        <div class="form-section-title">Titre de l'article</div>
+        {{ form.titre }}
+        {% if form.titre.errors %}<div class="text-danger small mt-1">{{ form.titre.errors.0 }}</div>{% endif %}
+        <div class="word-count mt-1" id="titre-count">0 / 250 caractères</div>
+      </div>
+
+      <!-- Résumé -->
+      <div class="form-section">
+        <div class="form-section-title">Résumé / Accroche <small class="text-muted fw-normal">(affiché sur la page d'accueil)</small></div>
+        {{ form.resume }}
+        {% if form.resume.errors %}<div class="text-danger small mt-1">{{ form.resume.errors.0 }}</div>{% endif %}
+        <div class="word-count mt-1" id="resume-count">0 / 500 caractères</div>
+      </div>
+
+      <!-- Contenu -->
+      <div class="form-section">
+        <div class="form-section-title">Contenu de l'article</div>
+        <!-- Mini toolbar -->
+        <div class="d-flex gap-2 mb-2 flex-wrap">
+          <button type="button" class="btn btn-sm btn-outline-secondary" onclick="insererTexte('**','**')" title="Gras">
+            <i class="bi bi-type-bold"></i>
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-secondary" onclick="insererTexte('_','_')" title="Italique">
+            <i class="bi bi-type-italic"></i>
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-secondary" onclick="insererLigne()" title="Séparateur">
+            <i class="bi bi-dash-lg"></i> Séparateur
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-secondary" onclick="insererCitation()" title="Citation">
+            <i class="bi bi-chat-quote"></i> Citation
+          </button>
+          <button type="button" class="btn btn-sm btn-outline-info ms-auto" onclick="togglePreview()" id="btn-preview">
+            <i class="bi bi-eye me-1"></i>Aperçu
+          </button>
+        </div>
+        {{ form.contenu }}
+        {% if form.contenu.errors %}<div class="text-danger small mt-1">{{ form.contenu.errors.0 }}</div>{% endif %}
+        <div class="word-count mt-1" id="contenu-count">0 mots</div>
+        <div id="contenu-preview" class="mt-3" style="display:none;"></div>
+      </div>
+
+      <!-- Image -->
+      <div class="form-section">
+        <div class="form-section-title">Image principale</div>
+        <div class="row g-3">
+          <div class="col-md-6">
+            <label class="form-label fw-medium small">Upload depuis votre appareil</label>
+            <input type="file" name="image" class="form-control" accept="image/*" id="img-upload" onchange="previewUpload(this)">
+            <img id="img-upload-preview" class="preview-img" alt="Aperçu">
+          </div>
+          <div class="col-md-6">
+            <label class="form-label fw-medium small">OU lien URL externe</label>
+            {{ form.image_url }}
+            <small class="text-muted">Ex: https://images.unsplash.com/photo-...</small>
+            <img id="img-url-preview" class="preview-img" alt="Aperçu URL">
+          </div>
+        </div>
+        {% if form.image.errors %}<div class="text-danger small mt-1">{{ form.image.errors.0 }}</div>{% endif %}
+      </div>
+
+      <!-- Catégorie & Tags -->
+      <div class="form-section">
+        <div class="row g-4">
+          <div class="col-md-6">
+            <div class="form-section-title">Catégorie</div>
+            {{ form.categorie }}
+            {% if form.categorie.errors %}<div class="text-danger small mt-1">{{ form.categorie.errors.0 }}</div>{% endif %}
+          </div>
+          <div class="col-md-6">
+            <div class="form-section-title">Tags</div>
+            <div class="tag-check-list">
+              {% for widget in form.tags %}
+              <label>
+                {{ widget.tag }} <span>{{ widget.choice_label }}</span>
+              </label>
+              {% endfor %}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Publication -->
+      <div class="form-section">
+        <div class="form-section-title">Options de publication</div>
+        <div class="row g-3 align-items-center">
+          <div class="col-md-4">
+            <label class="form-label fw-medium small">Statut</label>
+            {{ form.statut }}
+          </div>
+          <div class="col-md-4 d-flex align-items-center gap-2 pt-4">
+            {{ form.en_une }}
+            <label class="form-label mb-0 fw-medium small">Mettre à la une</label>
+          </div>
+        </div>
+        <div class="alert alert-info mt-3 mb-0 small">
+          <i class="bi bi-info-circle me-2"></i>
+          Sélectionnez <strong>Publié</strong> pour rendre l'article visible sur le site immédiatement.
+          Utilisez <strong>Brouillon</strong> pour sauvegarder sans publier.
+        </div>
+      </div>
+
+      <!-- Boutons -->
+      <div class="d-flex gap-3 justify-content-end pb-5">
+        <a href="{% url 'articles:mes_articles' %}" class="btn btn-outline-secondary px-4">Annuler</a>
+        <button type="submit" name="statut_submit" value="brouillon" class="btn btn-outline-primary px-4">
+          <i class="bi bi-floppy me-2"></i>Sauvegarder brouillon
+        </button>
+        <button type="submit" class="btn btn-accent px-5">
+          <i class="bi bi-send me-2"></i>{{ action }} l'article
+        </button>
+      </div>
+
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const titreInput = document.querySelector('[name="titre"]');
+const resumeInput = document.querySelector('[name="resume"]');
+const contenuInput = document.querySelector('[name="contenu"]');
+
+function updateCount(el, countEl, type) {
+  if (!el || !countEl) return;
+  el.addEventListener('input', () => {
+    if (type === 'mots') {
+      const mots = el.value.trim().split(/\s+/).filter(Boolean).length;
+      countEl.textContent = mots + ' mot' + (mots > 1 ? 's' : '');
+    } else {
+      const len = el.value.length;
+      const max = el.maxLength > 0 ? el.maxLength : (type === 'titre' ? 250 : 500);
+      countEl.textContent = len + ' / ' + max + ' caractères';
+    }
+  });
+}
+updateCount(titreInput, document.getElementById('titre-count'), 'titre');
+updateCount(resumeInput, document.getElementById('resume-count'), 'resume');
+updateCount(contenuInput, document.getElementById('contenu-count'), 'mots');
+
+function insererTexte(avant, apres) {
+  const ta = contenuInput;
+  const s = ta.selectionStart, e = ta.selectionEnd;
+  const sel = ta.value.substring(s, e);
+  ta.value = ta.value.substring(0, s) + avant + sel + apres + ta.value.substring(e);
+  ta.focus();
+  ta.setSelectionRange(s + avant.length, e + avant.length);
+}
+function insererLigne() {
+  const ta = contenuInput;
+  const pos = ta.selectionStart;
+  ta.value = ta.value.substring(0, pos) + '\n---\n' + ta.value.substring(pos);
+}
+function insererCitation() {
+  insererTexte('> ', '');
+}
+
+let previewOn = false;
+function togglePreview() {
+  previewOn = !previewOn;
+  const prev = document.getElementById('contenu-preview');
+  const ta = contenuInput;
+  if (previewOn) {
+    prev.style.display = 'block';
+    ta.style.display = 'none';
+    prev.innerHTML = ta.value.replace(/\n/g, '<br>');
+    document.getElementById('btn-preview').innerHTML = '<i class="bi bi-pencil me-1"></i>Éditer';
+  } else {
+    prev.style.display = 'none';
+    ta.style.display = 'block';
+    document.getElementById('btn-preview').innerHTML = '<i class="bi bi-eye me-1"></i>Aperçu';
+  }
+}
+
+function previewUpload(input) {
+  const preview = document.getElementById('img-upload-preview');
+  if (input.files && input.files[0]) {
+    const reader = new FileReader();
+    reader.onload = e => { preview.src = e.target.result; preview.style.display = 'block'; };
+    reader.readAsDataURL(input.files[0]);
+  }
+}
+
+const urlInput = document.querySelector('[name="image_url"]');
+if (urlInput) {
+  urlInput.addEventListener('blur', () => {
+    const val = urlInput.value.trim();
+    const preview = document.getElementById('img-url-preview');
+    if (val) { preview.src = val; preview.style.display = 'block'; }
+    else { preview.style.display = 'none'; }
+  });
+}
+</script>
+{% endblock %}

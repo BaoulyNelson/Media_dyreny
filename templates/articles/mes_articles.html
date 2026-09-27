@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% load humanize %}
+{% block titre %}Mes articles{% endblock %}
+{% block content %}
+<div class="container py-4">
+
+  <!-- En-tête rédaction -->
+  <div class="redac-header mb-4">
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
+      <div>
+        <h1 class="page-title mb-1"><i class="bi bi-pencil-square me-2 text-primary"></i>Espace rédaction</h1>
+        <p class="text-muted mb-0">Gérez vos articles et publiez de nouveaux contenus</p>
+      </div>
+      <a href="{% url 'articles:creer_article' %}" class="btn btn-accent btn-lg px-4">
+        <i class="bi bi-plus-lg me-2"></i>Nouvel article
+      </a>
+    </div>
+  </div>
+
+  <!-- Stats rapides -->
+  <div class="row g-3 mb-5">
+    <div class="col-4">
+      <div class="stat-card stat-total">
+        <div class="stat-num">{{ stats.total }}</div>
+        <div class="stat-label">Total</div>
+      </div>
+    </div>
+    <div class="col-4">
+      <div class="stat-card stat-publie">
+        <div class="stat-num">{{ stats.publies }}</div>
+        <div class="stat-label">Publiés</div>
+      </div>
+    </div>
+    <div class="col-4">
+      <div class="stat-card stat-brouillon">
+        <div class="stat-num">{{ stats.brouillons }}</div>
+        <div class="stat-label">Brouillons</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Liste des articles -->
+  {% if articles %}
+  <div class="table-responsive">
+    <table class="table table-hover align-middle redac-table">
+      <thead>
+        <tr>
+          <th>Article</th>
+          <th class="d-none d-md-table-cell">Catégorie</th>
+          <th>Statut</th>
+          <th class="d-none d-md-table-cell">Vues</th>
+          <th class="d-none d-md-table-cell">Date</th>
+          <th class="text-end">Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for art in articles %}
+        <tr>
+          <td>
+            <div class="d-flex align-items-center gap-3">
+              {% if art.get_image_url %}
+              <img src="{{ art.get_image_url }}" alt="" class="redac-thumb">
+              {% else %}
+              <div class="redac-thumb-placeholder"><i class="bi bi-newspaper"></i></div>
+              {% endif %}
+              <div>
+                <div class="fw-semibold text-truncate" style="max-width:220px;">{{ art.titre }}</div>
+                <small class="text-muted">{{ art.resume|truncatewords:8 }}</small>
+              </div>
+            </div>
+          </td>
+          <td class="d-none d-md-table-cell">
+            {% if art.categorie %}
+            <span class="badge-categorie badge-sm" style="background:{{ art.categorie.couleur }}">{{ art.categorie.nom }}</span>
+            {% else %}<span class="text-muted">—</span>{% endif %}
+          </td>
+          <td>
+            {% if art.statut == 'publie' %}
+              <span class="status-badge status-publie"><i class="bi bi-check-circle me-1"></i>Publié</span>
+            {% elif art.statut == 'brouillon' %}
+              <span class="status-badge status-brouillon"><i class="bi bi-pencil me-1"></i>Brouillon</span>
+            {% else %}
+              <span class="status-badge status-archive"><i class="bi bi-archive me-1"></i>Archivé</span>
+            {% endif %}
+          </td>
+          <td class="d-none d-md-table-cell text-muted">
+            <i class="bi bi-eye me-1"></i>{{ art.vues|intcomma }}
+          </td>
+          <td class="d-none d-md-table-cell text-muted small">{{ art.date_creation|date:"d/m/Y" }}</td>
+          <td class="text-end">
+            <div class="d-flex gap-2 justify-content-end">
+              {% if art.statut == 'publie' %}
+              <a href="{{ art.get_absolute_url }}" class="btn btn-sm btn-outline-secondary" title="Voir" target="_blank">
+                <i class="bi bi-eye"></i>
+              </a>
+              {% endif %}
+              <a href="{% url 'articles:modifier_article' art.slug %}" class="btn btn-sm btn-outline-primary" title="Modifier">
+                <i class="bi bi-pencil"></i>
+              </a>
+              <a href="{% url 'articles:supprimer_article' art.slug %}" class="btn btn-sm btn-outline-danger" title="Supprimer">
+                <i class="bi bi-trash"></i>
+              </a>
+            </div>
+          </td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+
+  {% if is_paginated %}
+  <nav class="mt-4">
+    <ul class="pagination justify-content-center">
+      {% if page_obj.has_previous %}
+      <li class="page-item"><a class="page-link" href="?page={{ page_obj.previous_page_number }}"><i class="bi bi-chevron-left"></i></a></li>
+      {% endif %}
+      <li class="page-item active"><span class="page-link">{{ page_obj.number }}</span></li>
+      {% if page_obj.has_next %}
+      <li class="page-item"><a class="page-link" href="?page={{ page_obj.next_page_number }}"><i class="bi bi-chevron-right"></i></a></li>
+      {% endif %}
+    </ul>
+  </nav>
+  {% endif %}
+
+  {% else %}
+  <div class="empty-redac text-center py-5">
+    <i class="bi bi-file-earmark-plus text-muted mb-3" style="font-size:4rem;"></i>
+    <h4 class="text-muted">Aucun article pour le moment</h4>
+    <p class="text-muted mb-4">Commencez dès maintenant à partager vos reportages et analyses.</p>
+    <a href="{% url 'articles:creer_article' %}" class="btn btn-accent btn-lg px-5">
+      <i class="bi bi-plus-lg me-2"></i>Rédiger mon premier article
+    </a>
+  </div>
+  {% endif %}
+
+</div>
+{% endblock %}

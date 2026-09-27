@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% load static humanize %}
+{% block titre %}Mon profil{% endblock %}
+{% block content %}
+<div class="container py-5">
+    <div class="row g-4">
+        <div class="col-lg-4">
+            <div class="profile-card text-center">
+            {# Après #}
+            {% if user.profil.avatar %}
+            <img src="{{ user.profil.avatar.url }}" alt="{{ user.username }}" class="profile-avatar mb-3">
+            {% else %}
+            <img src="https://ui-avatars.com/api/?name={{ user.username }}&size=100&background=e63946&color=fff&rounded=true"
+                alt="{{ user.username }}" class="profile-avatar mb-3">
+            {% endif %}
+                <h4 class="mb-1">{{ user.profil.get_nom_complet }}</h4>
+                <p class="text-muted mb-3">@{{ user.username }}</p>
+                {% if user.profil.bio %}
+                <p class="small text-muted">{{ user.profil.bio }}</p>
+                {% endif %}
+                <div class="d-flex justify-content-center gap-3 mb-3 text-muted small">
+                    {% if user.profil.site_web %}
+                    <a href="{{ user.profil.site_web }}" target="_blank" class="text-muted"><i class="bi bi-globe me-1"></i>Site web</a>
+                    {% endif %}
+                    {% if user.profil.twitter %}
+                    <span><i class="bi bi-twitter-x me-1"></i>{{ user.profil.twitter }}</span>
+                    {% endif %}
+                </div>
+                <a href="{% url 'accounts:modifier_profil' %}" class="btn btn-outline-primary w-100">
+                    <i class="bi bi-pencil me-2"></i>Modifier le profil
+                </a>
+                <button type="button" class="btn btn-outline-danger btn-sm mt-2 w-100"
+                        data-bs-toggle="modal" data-bs-target="#modalDeconnexion">
+                <i class="bi bi-box-arrow-right me-2"></i>Déconnexion
+                </button>
+            </div>
+        </div>
+        <div class="col-lg-8">
+            <div class="row g-4">
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white border-0 py-3">
+                            <h5 class="mb-0"><i class="bi bi-newspaper me-2 text-primary"></i>Mes derniers articles</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if mes_articles %}
+                            {% for art in mes_articles %}
+                            <div class="d-flex align-items-center justify-content-between py-2 {% if not forloop.last %}border-bottom{% endif %}">
+                                <div>
+                                    <a href="{{ art.get_absolute_url }}" class="fw-medium text-decoration-none">{{ art.titre|truncatewords:10 }}</a>
+                                    <div class="text-muted small">{{ art.date_publication|date:"j F Y" }}</div>
+                                </div>
+                                <div class="text-muted small"><i class="bi bi-eye me-1"></i>{{ art.vues|intcomma }}</div>
+                            </div>
+                            {% endfor %}
+                            {% else %}
+                            <p class="text-muted text-center py-3 mb-0">Aucun article publié.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+                <div class="col-12">
+                    <div class="card border-0 shadow-sm">
+                        <div class="card-header bg-white border-0 py-3">
+                            <h5 class="mb-0"><i class="bi bi-chat-dots me-2 text-primary"></i>Mes derniers Commentss</h5>
+                        </div>
+                        <div class="card-body">
+                            {% if mes_Commentss %}
+                            {% for com in mes_Commentss %}
+                            <div class="py-2 {% if not forloop.last %}border-bottom{% endif %}">
+                                <p class="mb-1 small">{{ com.contenu|truncatewords:15 }}</p>
+                                <small class="text-muted">
+                                    Sur : <a href="{{ com.article.get_absolute_url }}" class="text-decoration-none">{{ com.article.titre|truncatewords:8 }}</a>
+                                    · {{ com.date_creation|date:"j F Y" }}
+                                </small>
+                            </div>
+                            {% endfor %}
+                            {% else %}
+                            <p class="text-muted text-center py-3 mb-0">Aucun Comments publié.</p>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

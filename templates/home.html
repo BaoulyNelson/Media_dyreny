@@ -1,0 +1,202 @@
+{% extends "base.html" %}
+{% load static humanize %}
+
+{% block titre %}Accueil{% endblock %}
+
+{% block content %}
+
+<!-- HERO SECTION -->
+{% if article_une %}
+<section class="hero-section">
+    <div class="container py-4">
+        <div class="row g-4 align-items-stretch">
+            <!-- Article principal -->
+            <div class="col-lg-7">
+                <article class="hero-main-card h-100">
+                    {% if article_une.get_image_url %}
+                    <div class="hero-img-wrap">
+                        <img src="{{ article_une.get_image_url }}" alt="{{ article_une.titre }}" class="hero-img">
+                        <div class="hero-overlay"></div>
+                    </div>
+                    {% else %}
+                    <div class="hero-img-wrap hero-placeholder">
+                        <div class="hero-overlay"></div>
+                    </div>
+                    {% endif %}
+                    <div class="hero-content">
+                        {% if article_une.categorie %}
+                        <span class="badge-categorie" style="background:{{ article_une.categorie.couleur }}">
+                            {{ article_une.categorie.nom }}
+                        </span>
+                        {% endif %}
+                        <h1 class="hero-titre">
+                            <a href="{{ article_une.get_absolute_url }}" class="text-white text-decoration-none">
+                                {{ article_une.titre }}
+                            </a>
+                        </h1>
+                        <p class="hero-resume d-none d-md-block">{{ article_une.resume|truncatewords:25 }}</p>
+                        <div class="article-meta text-white-50">
+                            <span><i class="bi bi-person me-1"></i>{{ article_une.auteur.get_full_name|default:article_une.auteur.username }}</span>
+                            <span class="mx-2">·</span>
+                            <span><i class="bi bi-calendar3 me-1"></i>{{ article_une.date_publication|date:"j F Y" }}</span>
+                            <span class="mx-2">·</span>
+                            <span><i class="bi bi-clock me-1"></i>{{ article_une.temps_lecture }} min</span>
+                        </div>
+                    </div>
+                </article>
+            </div>
+
+            <!-- Articles secondaires -->
+            <div class="col-lg-5">
+                <div class="row g-3 h-100">
+                    {% for art in articles_une %}
+                    <div class="col-12">
+                        <article class="hero-side-card">
+                            {% if art.get_image_url %}
+                            <div class="hero-side-img-wrap">
+                                <img src="{{ art.get_image_url }}" alt="{{ art.titre }}" class="hero-side-img">
+                            </div>
+                            {% else %}
+                            <div class="hero-side-img-wrap hero-side-placeholder"></div>
+                            {% endif %}
+                            <div class="hero-side-content">
+                                {% if art.categorie %}
+                                <span class="badge-categorie badge-sm" style="background:{{ art.categorie.couleur }}">{{ art.categorie.nom }}</span>
+                                {% endif %}
+                                <h3 class="hero-side-titre">
+                                    <a href="{{ art.get_absolute_url }}" class="text-decoration-none">{{ art.titre }}</a>
+                                </h3>
+                                <small class="text-muted"><i class="bi bi-calendar3 me-1"></i>{{ art.date_publication|date:"j F Y" }}</small>
+                            </div>
+                        </article>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+{% endif %}
+
+<!-- DERNIERS ARTICLES -->
+<section class="section-articles py-5">
+    <div class="container">
+        <div class="row align-items-center mb-4">
+            <div class="col">
+                <h2 class="section-title">Dernières actualités</h2>
+            </div>
+            <div class="col-auto">
+                <a href="{% url 'articles:liste' %}" class="btn btn-outline-primary btn-sm">
+                    Voir tout <i class="bi bi-arrow-right ms-1"></i>
+                </a>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            {% for article in derniers_articles %}
+            <div class="col-lg-4 col-md-6">
+                <article class="article-card h-100">
+                    <a href="{{ article.get_absolute_url }}" class="article-img-link">
+                        {% if article.get_image_url %}
+                        <img src="{{ article.get_image_url }}" alt="{{ article.titre }}" class="article-img">
+                        {% else %}
+                        <div class="article-img-placeholder">
+                            <i class="bi bi-newspaper"></i>
+                        </div>
+                        {% endif %}
+                        {% if article.categorie %}
+                        <span class="article-cat-badge" style="background:{{ article.categorie.couleur }}">{{ article.categorie.nom }}</span>
+                        {% endif %}
+                    </a>
+                    <div class="article-body">
+                        <h3 class="article-titre">
+                            <a href="{{ article.get_absolute_url }}" class="text-decoration-none">{{ article.titre }}</a>
+                        </h3>
+                        <p class="article-resume">{{ article.resume|truncatewords:18 }}</p>
+                        <div class="article-footer">
+                            <div class="article-meta">
+                                <img src="https://ui-avatars.com/api/?name={{ article.auteur.username }}&size=28&background=e63946&color=fff&rounded=true" 
+                                     alt="{{ article.auteur.username }}" class="article-avatar">
+                                <div>
+                                    <div class="article-auteur">{{ article.auteur.get_full_name|default:article.auteur.username }}</div>
+                                    <div class="article-date">{{ article.date_publication|date:"j F Y" }}</div>
+                                </div>
+                            </div>
+                            <div class="article-stats">
+                                <span title="Vues"><i class="bi bi-eye me-1"></i>{{ article.vues|intcomma }}</span>
+                                <span class="ms-2" title="Commentss"><i class="bi bi-chat me-1"></i>{{ article.Commentss_approuves.count }}</span>
+                            </div>
+                        </div>
+                    </div>
+                </article>
+            </div>
+            {% empty %}
+            <div class="col-12 text-center py-5">
+                <i class="bi bi-newspaper text-muted" style="font-size:3rem;"></i>
+                <p class="text-muted mt-3">Aucun article publié pour le moment.</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</section>
+
+<!-- CATEGORIES + SIDEBAR -->
+<section class="section-categories py-5 bg-light">
+    <div class="container">
+        <div class="row g-4">
+            <!-- Catégories -->
+            <div class="col-lg-8">
+                <h2 class="section-title mb-4">Parcourir par catégorie</h2>
+                <div class="row g-3">
+                    {% for cat in categories %}
+                    <div class="col-md-4 col-6">
+                        <a href="{{ cat.get_absolute_url }}" class="cat-card text-decoration-none">
+                            <div class="cat-card-inner" style="border-left: 4px solid {{ cat.couleur }}">
+                                <div class="cat-nom">{{ cat.nom }}</div>
+                                <div class="cat-count">{{ cat.nombre_articles }} article{{ cat.nombre_articles|pluralize }}</div>
+                            </div>
+                        </a>
+                    </div>
+                    {% empty %}
+                    <p class="text-muted">Aucune catégorie disponible.</p>
+                    {% endfor %}
+                </div>
+            </div>
+            <!-- Articles populaires -->
+            <div class="col-lg-4">
+                <h2 class="section-title mb-4">Les plus lus</h2>
+                <div class="popular-list">
+                    {% for art in articles_populaires %}
+                    <div class="popular-item">
+                        <div class="popular-num">{{ forloop.counter }}</div>
+                        <div class="popular-info">
+                            <a href="{{ art.get_absolute_url }}" class="popular-titre text-decoration-none">{{ art.titre|truncatewords:10 }}</a>
+                            <div class="popular-meta">
+                                <span><i class="bi bi-eye me-1"></i>{{ art.vues|intcomma }} vues</span>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+<!-- BANNIERE CTA -->
+<section class="cta-section py-5">
+    <div class="container text-center">
+        <h2 class="text-white mb-2">Restez informé</h2>
+        <p class="text-white-50 mb-4">Suivez toute l'actualité en vous inscrivant à notre newsletter gratuite</p>
+        <div class="row justify-content-center">
+            <div class="col-md-5">
+                <div class="input-group">
+                    <input type="email" class="form-control" placeholder="Votre adresse e-mail">
+                    <button class="btn btn-light fw-semibold" type="button">S'abonner</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</section>
+
+{% endblock %}

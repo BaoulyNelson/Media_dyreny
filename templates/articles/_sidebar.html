@@ -1,0 +1,37 @@
+{% load humanize %}
+<aside class="sidebar">
+    <!-- Recherche -->
+    <div class="sidebar-widget">
+        <h5 class="widget-title"><i class="bi bi-search me-2"></i>Recherche</h5>
+        <form action="{% url 'articles:recherche' %}" method="get">
+            <div class="input-group">
+                <input type="text" name="q" class="form-control" placeholder="Mot-clé..." value="{{ request.GET.q|default:'' }}">
+                <button class="btn btn-accent" type="submit"><i class="bi bi-search"></i></button>
+            </div>
+        </form>
+    </div>
+
+    <!-- Catégories -->
+    <div class="sidebar-widget">
+        <h5 class="widget-title"><i class="bi bi-folder2 me-2"></i>Catégories</h5>
+        <ul class="widget-cat-list list-unstyled mb-0">
+            {% for cat in nav_categories %}
+            <li>
+                <a href="{{ cat.get_absolute_url }}" class="widget-cat-link">
+                    <span class="cat-dot" style="background:{{ cat.couleur }}"></span>
+                    {{ cat.nom }}
+                    <span class="ms-auto badge bg-light text-dark">{{ cat.nombre_articles }}</span>
+                </a>
+            </li>
+            {% endfor %}
+        </ul>
+    </div>
+
+    <!-- Newsletter -->
+    <div class="sidebar-widget sidebar-newsletter">
+        <h5 class="widget-title text-white"><i class="bi bi-envelope-heart me-2"></i>Newsletter</h5>
+        <p class="text-white-50 small">Recevez nos dernières actualités directement dans votre boîte mail.</p>
+        <input type="email" class="form-control form-control-sm mb-2" placeholder="votre@email.com">
+        <button class="btn btn-light btn-sm w-100 fw-semibold">S'abonner gratuitement</button>
+    </div>
+</aside>

@@ -1,0 +1,33 @@
+# Environnements Python
+venv/
+.venv/
+__pycache__/
+*.py[cod]
+*.pyo
+*.pyd
+
+# Django
+*.log
+local_settings.py
+/media/
+/staticfiles/
+*.sqlite3
+
+# Fichiers d'environnement
+.env
+.env.*
+
+# IDE / éditeur
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Système
+.DS_Store
+Thumbs.db
+
+# Build / coverage
+.coverage
+htmlcov/
+.pytest_cache/

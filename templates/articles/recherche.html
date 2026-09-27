@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% load humanize %}
+
+{% block titre %}{{ titre_page }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row g-5">
+        <div class="col-lg-8">
+            <div class="mb-4">
+                <form action="{% url 'articles:recherche' %}" method="get" class="mb-4">
+                    <div class="input-group input-group-lg">
+                        <input type="text" name="q" class="form-control" 
+                               placeholder="Rechercher un article..." value="{{ query }}">
+                        <button class="btn btn-accent" type="submit">
+                            <i class="bi bi-search me-1"></i>Rechercher
+                        </button>
+                    </div>
+                </form>
+                {% if query %}
+                <h1 class="page-title mb-1">Résultats pour « {{ query }} »</h1>
+                <p class="text-muted">{{ page_obj.paginator.count }} résultat{{ page_obj.paginator.count|pluralize }} trouvé{{ page_obj.paginator.count|pluralize }}</p>
+                {% endif %}
+            </div>
+
+            {% if query %}
+            <div class="row g-4">
+                {% for article in articles %}
+                <div class="col-12">
+                    <article class="d-flex gap-3 article-search-item p-3 bg-white rounded-3 shadow-sm">
+                        {% if article.get_image_url %}
+                        <img src="{{ article.get_image_url }}" alt="{{ article.titre }}" 
+                             class="rounded-2 flex-shrink-0" style="width:120px;height:90px;object-fit:cover;">
+                        {% else %}
+                        <div class="flex-shrink-0 bg-light rounded-2 d-flex align-items-center justify-content-center" 
+                             style="width:120px;height:90px;">
+                            <i class="bi bi-newspaper text-muted fs-3"></i>
+                        </div>
+                        {% endif %}
+                        <div>
+                            {% if article.categorie %}
+                            <span class="badge-categorie badge-sm mb-1" style="background:{{ article.categorie.couleur }}">
+                                {{ article.categorie.nom }}
+                            </span>
+                            {% endif %}
+                            <h3 class="h6 mb-1">
+                                <a href="{{ article.get_absolute_url }}" class="text-decoration-none">{{ article.titre }}</a>
+                            </h3>
+                            <p class="text-muted small mb-1">{{ article.resume|truncatewords:20 }}</p>
+                            <small class="text-muted">
+                                <i class="bi bi-person me-1"></i>{{ article.auteur.get_full_name|default:article.auteur.username }}
+                                <span class="mx-1">·</span>
+                                <i class="bi bi-calendar3 me-1"></i>{{ article.date_publication|date:"j F Y" }}
+                            </small>
+                        </div>
+                    </article>
+                </div>
+                {% empty %}
+                <div class="col-12 text-center py-5">
+                    <i class="bi bi-search text-muted" style="font-size:3rem;"></i>
+                    <p class="text-muted mt-3">Aucun article trouvé pour « {{ query }} ».</p>
+                    <a href="{% url 'articles:liste' %}" class="btn btn-primary mt-2">Voir tous les articles</a>
+                </div>
+                {% endfor %}
+            </div>
+
+            {% if is_paginated %}
+            <nav class="mt-4">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item"><a class="page-link" href="?q={{ query }}&page={{ page_obj.previous_page_number }}"><i class="bi bi-chevron-left"></i></a></li>
+                    {% endif %}
+                    <li class="page-item active"><span class="page-link">{{ page_obj.number }}</span></li>
+                    {% if page_obj.has_next %}
+                    <li class="page-item"><a class="page-link" href="?q={{ query }}&page={{ page_obj.next_page_number }}"><i class="bi bi-chevron-right"></i></a></li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+            {% endif %}
+        </div>
+        <div class="col-lg-4">
+            {% include "articles/_sidebar.html" %}
+        </div>
+    </div>
+</div>
+{% endblock %}

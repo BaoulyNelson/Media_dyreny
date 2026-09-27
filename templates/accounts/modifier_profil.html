@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% block titre %}Modifier mon profil{% endblock %}
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-7">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-white border-0 py-4">
+                    <h2 class="mb-0"><i class="bi bi-person-gear me-2 text-primary"></i>Modifier mon profil</h2>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="row g-3">
+                            <div class="col-6">
+                                <label class="form-label fw-medium">{{ form.first_name.label }}</label>
+                                {{ form.first_name }}
+                            </div>
+                            <div class="col-6">
+                                <label class="form-label fw-medium">{{ form.last_name.label }}</label>
+                                {{ form.last_name }}
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-medium">{{ form.email.label }}</label>
+                                {{ form.email }}
+                                {% if form.email.errors %}<div class="text-danger small mt-1">{{ form.email.errors.0 }}</div>{% endif %}
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-medium">{{ form.bio.label }}</label>
+                                {{ form.bio }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium">{{ form.site_web.label }}</label>
+                                {{ form.site_web }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium">{{ form.twitter.label }}</label>
+                                {{ form.twitter }}
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-medium">{{ form.avatar.label }}</label>
+                                <div class="d-flex flex-column flex-md-row align-items-center gap-3">
+                                    <img id="avatar-preview"
+                                         src="{% if user.profil.avatar %}{{ user.profil.avatar.url }}{% else %}https://ui-avatars.com/api/?name={{ user.username }}&size=120&background=e63946&color=fff&rounded=true{% endif %}"
+                                         alt="Aperçu de la photo de profil"
+                                         class="rounded-circle border shadow-sm"
+                                         style="width: 100px; height: 100px; object-fit: cover; background: #f5f5f5;">
+                                    <div class="w-100">
+                                        {{ form.avatar }}
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-12 pt-2">
+                                <button type="submit" class="btn btn-accent me-2">
+                                    <i class="bi bi-check-lg me-2"></i>Enregistrer
+                                </button>
+                                <a href="{% url 'accounts:profil' %}" class="btn btn-outline-secondary">Annuler</a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () {
+        const input = document.getElementById('id_avatar');
+        const preview = document.getElementById('avatar-preview');
+
+        if (!input || !preview) return;
+
+        const defaultSrc = preview.getAttribute('src');
+
+        input.addEventListener('change', function (event) {
+            const file = event.target.files && event.target.files[0];
+
+            if (!file) {
+                preview.src = defaultSrc;
+                return;
+            }
+
+            if (!file.type.startsWith('image/')) {
+                preview.src = defaultSrc;
+                return;
+            }
+
+            const reader = new FileReader();
+            reader.onload = function (e) {
+                preview.src = e.target.result;
+            };
+            reader.readAsDataURL(file);
+        });
+    });
+</script>
+{% endblock %}

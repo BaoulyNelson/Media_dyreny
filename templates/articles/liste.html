@@ -1,0 +1,105 @@
+{% extends "base.html" %}
+{% load static humanize %}
+
+{% block titre %}{{ titre_page }}{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row g-5">
+        <!-- ARTICLES -->
+        <div class="col-lg-8">
+            <div class="d-flex align-items-center justify-content-between mb-4">
+                <div>
+                    <h1 class="page-title mb-1">{{ titre_page }}</h1>
+                    {% if categorie %}
+                    <p class="text-muted">{{ page_obj.paginator.count }} article{{ page_obj.paginator.count|pluralize }} dans cette catégorie</p>
+                    {% elif tag %}
+                    <p class="text-muted">{{ page_obj.paginator.count }} article{{ page_obj.paginator.count|pluralize }} avec ce tag</p>
+                    {% endif %}
+                </div>
+                {% if categorie %}
+                <span class="badge fs-6 px-3 py-2" style="background:{{ categorie.couleur }}">{{ categorie.nom }}</span>
+                {% endif %}
+            </div>
+
+            <div class="row g-4">
+                {% for article in articles %}
+                <div class="col-md-6">
+                    <article class="article-card h-100">
+                        <a href="{{ article.get_absolute_url }}" class="article-img-link">
+                            {% if article.get_image_url %}
+                            <img src="{{ article.get_image_url }}" alt="{{ article.titre }}" class="article-img">
+                            {% else %}
+                            <div class="article-img-placeholder"><i class="bi bi-newspaper"></i></div>
+                            {% endif %}
+                            {% if article.categorie %}
+                            <span class="article-cat-badge" style="background:{{ article.categorie.couleur }}">{{ article.categorie.nom }}</span>
+                            {% endif %}
+                        </a>
+                        <div class="article-body">
+                            <h2 class="article-titre">
+                                <a href="{{ article.get_absolute_url }}" class="text-decoration-none">{{ article.titre }}</a>
+                            </h2>
+                            <p class="article-resume">{{ article.resume|truncatewords:20 }}</p>
+                            <div class="article-footer">
+                                <div class="article-meta">
+                                    <img src="https://ui-avatars.com/api/?name={{ article.auteur.username }}&size=28&background=e63946&color=fff&rounded=true"
+                                         alt="{{ article.auteur.username }}" class="article-avatar">
+                                    <div>
+                                        <div class="article-auteur">{{ article.auteur.get_full_name|default:article.auteur.username }}</div>
+                                        <div class="article-date">{{ article.date_publication|date:"j F Y" }}</div>
+                                    </div>
+                                </div>
+                                <div class="article-stats">
+                                    <span><i class="bi bi-clock me-1"></i>{{ article.temps_lecture }} min</span>
+                                </div>
+                            </div>
+                        </div>
+                    </article>
+                </div>
+                {% empty %}
+                <div class="col-12 text-center py-5">
+                    <i class="bi bi-search text-muted" style="font-size:3rem;"></i>
+                    <p class="text-muted mt-3">Aucun article disponible pour le moment.</p>
+                    <a href="{% url 'articles:accueil' %}" class="btn btn-primary mt-2">Retour à l'accueil</a>
+                </div>
+                {% endfor %}
+            </div>
+
+            <!-- PAGINATION -->
+            {% if is_paginated %}
+            <nav class="mt-5" aria-label="Navigation des pages">
+                <ul class="pagination justify-content-center">
+                    {% if page_obj.has_previous %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.previous_page_number }}">
+                            <i class="bi bi-chevron-left"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                    {% for num in page_obj.paginator.page_range %}
+                    {% if page_obj.number == num %}
+                    <li class="page-item active"><span class="page-link">{{ num }}</span></li>
+                    {% elif num > page_obj.number|add:-3 and num < page_obj.number|add:3 %}
+                    <li class="page-item"><a class="page-link" href="?page={{ num }}">{{ num }}</a></li>
+                    {% endif %}
+                    {% endfor %}
+                    {% if page_obj.has_next %}
+                    <li class="page-item">
+                        <a class="page-link" href="?page={{ page_obj.next_page_number }}">
+                            <i class="bi bi-chevron-right"></i>
+                        </a>
+                    </li>
+                    {% endif %}
+                </ul>
+            </nav>
+            {% endif %}
+        </div>
+
+        <!-- SIDEBAR -->
+        <div class="col-lg-4">
+            {% include "articles/_sidebar.html" %}
+        </div>
+    </div>
+</div>
+{% endblock %}

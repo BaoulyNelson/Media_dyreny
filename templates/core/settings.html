@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+
+{% block titre %}Paramètres du site{% endblock %}
+
+{% block content %}
+<div class="container py-5">
+    <div class="row justify-content-center">
+        <div class="col-lg-8">
+            <div class="card shadow-sm border-0 rounded-4">
+                <div class="card-header bg-white border-0 py-4">
+                    <h2 class="mb-0"><i class="bi bi-sliders me-2 text-primary"></i>Paramètres du site</h2>
+                </div>
+                <div class="card-body p-4">
+                    <form method="post" enctype="multipart/form-data">
+                        {% csrf_token %}
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium">{{ form.site_name.label }}</label>
+                                {{ form.site_name }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium">{{ form.slogan.label }}</label>
+                                {{ form.slogan }}
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-medium">{{ form.site_description.label }}</label>
+                                {{ form.site_description }}
+                            </div>
+                            <div class="col-12">
+                                <label class="form-label fw-medium">{{ form.logo.label }}</label>
+                                {% if object.logo %}
+                                    <div class="mb-2">
+                                        <img src="{{ object.logo.url }}" alt="Logo du site" style="max-height:80px; width:auto; border-radius:10px;">
+                                    </div>
+                                {% endif %}
+                                {{ form.logo }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium">{{ form.address.label }}</label>
+                                {{ form.address }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium">{{ form.phone.label }}</label>
+                                {{ form.phone }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium">{{ form.email.label }}</label>
+                                {{ form.email }}
+                            </div>
+                            <div class="col-md-6"></div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium">{{ form.facebook_url.label }}</label>
+                                {{ form.facebook_url }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium">{{ form.twitter_url.label }}</label>
+                                {{ form.twitter_url }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium">{{ form.instagram_url.label }}</label>
+                                {{ form.instagram_url }}
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label fw-medium">{{ form.youtube_url.label }}</label>
+                                {{ form.youtube_url }}
+                            </div>
+                            <div class="col-12 pt-2">
+                                <button type="submit" class="btn btn-accent me-2">
+                                    <i class="bi bi-check-lg me-2"></i>Enregistrer
+                                </button>
+                                <a href="{% url 'articles:accueil' %}" class="btn btn-outline-secondary">Retour</a>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
