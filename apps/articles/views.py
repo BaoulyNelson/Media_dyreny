@@ -1,16 +1,24 @@
 from django.shortcuts import render, get_object_or_404, redirect
 from django.views.generic import ListView, DetailView, TemplateView
 from django.contrib import messages
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.conf import settings
+from django.http import JsonResponse
 from django.utils.safestring import mark_safe
 import nh3
 from urllib.parse import urljoin
 from .models import Article, Categorie, Tag
 from .forms import CommentsForm, RechercheForm
-from django.views.generic import CreateView, UpdateView, DeleteView, ListView as LV2
+from django.views.generic import (
+    CreateView,
+    UpdateView,
+    DeleteView,
+    FormView,
+    ListView as LV2,
+    View,
+)
 from django.urls import reverse_lazy
-from .forms import ArticleForm
+from .forms import ArticleForm, CategorieForm
 from .mixins import JournalisteRequiredMixin
 
 
@@ -250,6 +258,44 @@ class MesArticlesView(JournalisteRequiredMixin, LV2):
         return ctx
 
 
+class GestionCategoriesView(JournalisteRequiredMixin, FormView):
+    form_class = CategorieForm
+    template_name = "articles/gestion_categories.html"
+    success_url = reverse_lazy("articles:gestion_categories")
+
+    def form_valid(self, form):
+        categorie = form.save()
+        messages.success(
+            self.request, f"La catégorie « {categorie.nom} » a été ajoutée."
+        )
+        return super().form_valid(form)
+
+    def get_context_data(self, **kwargs):
+        ctx = super().get_context_data(**kwargs)
+        ctx["categories"] = Categorie.objects.annotate(
+            nombre_utilisations=Count("articles")
+        )
+        ctx["titre_page"] = "Gérer les catégories"
+        return ctx
+
+
+class CreerCategorieAjaxView(JournalisteRequiredMixin, View):
+    def post(self, request, *args, **kwargs):
+        form = CategorieForm(request.POST)
+        if not form.is_valid():
+            return JsonResponse({"errors": form.errors.get_json_data()}, status=400)
+
+        categorie = form.save()
+        return JsonResponse(
+            {
+                "id": categorie.pk,
+                "nom": categorie.nom,
+                "couleur": categorie.couleur,
+            },
+            status=201,
+        )
+
+
 class CreerArticleView(JournalisteRequiredMixin, CreateView):
     model = Article
     form_class = ArticleForm
@@ -267,6 +313,7 @@ class CreerArticleView(JournalisteRequiredMixin, CreateView):
         ctx = super().get_context_data(**kwargs)
         ctx["titre_page"] = "Nouvel article"
         ctx["action"] = "Créer"
+        ctx["categorie_modal_form"] = CategorieForm()
         return ctx
 
 
@@ -292,6 +339,7 @@ class ModifierArticleView(JournalisteRequiredMixin, UpdateView):
         ctx = super().get_context_data(**kwargs)
         ctx["titre_page"] = f"Modifier : {self.object.titre}"
         ctx["action"] = "Modifier"
+        ctx["categorie_modal_form"] = CategorieForm()
         return ctx
 
 

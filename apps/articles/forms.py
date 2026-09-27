@@ -3,8 +3,9 @@ from html import unescape
 import nh3
 from django import forms
 from django.utils.html import strip_tags
+from django.utils.text import slugify
 from django_ckeditor_5.widgets import CKEditor5Widget
-from .models import Article, ArticleImage, Comments
+from .models import Article, ArticleImage, Categorie, Comments
 
 
 class CommentsForm(forms.ModelForm):
@@ -61,6 +62,35 @@ class MultipleImageField(forms.ImageField):
             return []
         files = data if isinstance(data, (list, tuple)) else [data]
         return [super(MultipleImageField, self).clean(file, initial) for file in files]
+
+
+class CategorieForm(forms.ModelForm):
+    class Meta:
+        model = Categorie
+        fields = ["nom", "description", "couleur"]
+        labels = {
+            "nom": "Nom de la catégorie",
+            "description": "Description",
+            "couleur": "Couleur",
+        }
+        widgets = {
+            "nom": forms.TextInput(
+                attrs={"class": "form-control", "placeholder": "Ex. Culture"}
+            ),
+            "description": forms.Textarea(attrs={"class": "form-control", "rows": 3}),
+            "couleur": forms.TextInput(
+                attrs={"class": "form-control form-control-color", "type": "color"}
+            ),
+        }
+
+    def clean_nom(self):
+        nom = self.cleaned_data["nom"].strip()
+        slug = slugify(nom)
+        if Categorie.objects.filter(slug=slug).exists():
+            raise forms.ValidationError(
+                "Une catégorie avec ce nom ou une URL équivalente existe déjà."
+            )
+        return nom
 
 
 class ArticleForm(forms.ModelForm):

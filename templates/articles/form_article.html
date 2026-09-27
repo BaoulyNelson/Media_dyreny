@@ -28,6 +28,7 @@
 .preview-img { max-height:200px; object-fit:cover; border-radius:8px; width:100%; margin-top:.8rem; display:none; }
 .gallery-preview-list, .saved-gallery { display:grid; grid-template-columns:repeat(auto-fill,minmax(130px,1fr)); gap:.75rem; margin-top:1rem; }
 .gallery-preview-list img, .saved-gallery img { width:100%; height:110px; object-fit:cover; border-radius:8px; }
+.category-add-button { width:46px; height:46px; flex:0 0 46px; }
 </style>
 {% endblock %}
 
@@ -129,7 +130,12 @@
         <div class="row g-4">
           <div class="col-md-6">
             <div class="form-section-title">Catégorie</div>
-            {{ form.categorie }}
+            <div class="d-flex align-items-start gap-2">
+              <div class="flex-grow-1">{{ form.categorie }}</div>
+              <button type="button" class="btn btn-outline-primary category-add-button" data-bs-toggle="modal" data-bs-target="#modalNouvelleCategorie" aria-label="Ajouter une catégorie" title="Ajouter une catégorie">
+                <i class="bi bi-plus-lg" aria-hidden="true"></i>
+              </button>
+            </div>
             {% if form.categorie.errors %}<div class="text-danger small mt-1">{{ form.categorie.errors.0 }}</div>{% endif %}
           </div>
           <div class="col-md-6">
@@ -177,6 +183,44 @@
       </div>
 
     </form>
+
+    <div class="modal fade" id="modalNouvelleCategorie" tabindex="-1" aria-labelledby="modalNouvelleCategorieTitre" aria-hidden="true">
+      <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+          <form id="formNouvelleCategorie" method="post" action="{% url 'articles:creer_categorie_ajax' %}" novalidate>
+            {% csrf_token %}
+            <div class="modal-header">
+              <h2 class="modal-title fs-5" id="modalNouvelleCategorieTitre">Ajouter une catégorie</h2>
+              <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fermer"></button>
+            </div>
+            <div class="modal-body">
+              <div id="erreursCategorieModal" class="alert alert-danger d-none" role="alert" aria-live="polite"></div>
+              <div class="mb-3">
+                <label class="form-label" for="{{ categorie_modal_form.nom.id_for_label }}">{{ categorie_modal_form.nom.label }}</label>
+                {{ categorie_modal_form.nom }}
+                <div id="erreurCategorieNom" class="text-danger small mt-1"></div>
+              </div>
+              <div class="mb-3">
+                <label class="form-label" for="{{ categorie_modal_form.description.id_for_label }}">{{ categorie_modal_form.description.label }}</label>
+                {{ categorie_modal_form.description }}
+                <div id="erreurCategorieDescription" class="text-danger small mt-1"></div>
+              </div>
+              <div>
+                <label class="form-label d-block" for="{{ categorie_modal_form.couleur.id_for_label }}">{{ categorie_modal_form.couleur.label }}</label>
+                {{ categorie_modal_form.couleur }}
+                <div id="erreurCategorieCouleur" class="text-danger small mt-1"></div>
+              </div>
+            </div>
+            <div class="modal-footer">
+              <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">Annuler</button>
+              <button type="submit" class="btn btn-accent" id="boutonEnregistrerCategorie">
+                <i class="bi bi-plus-lg me-1"></i>Ajouter
+              </button>
+            </div>
+          </form>
+        </div>
+      </div>
+    </div>
   </div>
 </div>
 {% endblock %}
@@ -279,5 +323,59 @@ if (urlInput) {
     else { preview.style.display = 'none'; }
   });
 }
+
+const categoryModalForm = document.getElementById('formNouvelleCategorie');
+categoryModalForm.addEventListener('submit', async event => {
+  event.preventDefault();
+  const submitButton = document.getElementById('boutonEnregistrerCategorie');
+  const errorSummary = document.getElementById('erreursCategorieModal');
+  const csrfToken = categoryModalForm.querySelector('[name="csrfmiddlewaretoken"]').value;
+  const fieldErrors = {
+    nom: document.getElementById('erreurCategorieNom'),
+    description: document.getElementById('erreurCategorieDescription'),
+    couleur: document.getElementById('erreurCategorieCouleur'),
+  };
+
+  errorSummary.classList.add('d-none');
+  errorSummary.textContent = '';
+  Object.values(fieldErrors).forEach(element => { element.textContent = ''; });
+  submitButton.disabled = true;
+
+  try {
+    const response = await fetch(categoryModalForm.action, {
+      method: 'POST',
+      body: new FormData(categoryModalForm),
+      headers: {
+        'X-CSRFToken': csrfToken,
+        'X-Requested-With': 'XMLHttpRequest',
+      },
+    });
+    const result = await response.json();
+
+    if (!response.ok) {
+      Object.entries(result.errors || {}).forEach(([field, errors]) => {
+        const messages = errors.map(error => error.message).join(' ');
+        if (fieldErrors[field]) fieldErrors[field].textContent = messages;
+        else errorSummary.textContent += `${messages} `;
+      });
+      if (errorSummary.textContent) errorSummary.classList.remove('d-none');
+      return;
+    }
+
+    const categorySelect = document.getElementById('id_categorie');
+    const option = new Option(result.nom, result.id, true, true);
+    categorySelect.add(option);
+    categoryModalForm.reset();
+    bootstrap.Modal.getOrCreateInstance(
+      document.getElementById('modalNouvelleCategorie')
+    ).hide();
+    categorySelect.focus();
+  } catch (error) {
+    errorSummary.textContent = 'La catégorie n’a pas pu être enregistrée. Réessayez.';
+    errorSummary.classList.remove('d-none');
+  } finally {
+    submitButton.disabled = false;
+  }
+});
 </script>
 {% endblock %}

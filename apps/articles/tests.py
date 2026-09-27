@@ -1,14 +1,14 @@
 from io import BytesIO
 import tempfile
 
-from django.contrib.auth.models import User
+from django.contrib.auth.models import Group, User
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.test import Client, TestCase, override_settings
 from django.urls import reverse
 from PIL import Image
 
 from .forms import ArticleForm
-from .models import Article, ArticleImage
+from .models import Article, ArticleImage, Categorie
 
 
 class ArticleGalleryTests(TestCase):
@@ -104,3 +104,57 @@ class ArticleGalleryTests(TestCase):
         )
         for image in article.images.all():
             self.assertContains(response, image.image.url)
+
+
+class CategoryManagementTests(TestCase):
+    def setUp(self):
+        self.user = User.objects.create_user(username="journalist", password="pass")
+        journalist_group, _ = Group.objects.get_or_create(name="Journalistes")
+        self.user.groups.add(journalist_group)
+        self.client.force_login(self.user)
+
+    def test_journalist_can_create_category_without_creating_article(self):
+        response = self.client.post(
+            reverse("articles:gestion_categories"),
+            {
+                "nom": "Culture locale",
+                "description": "Arts et événements de la région.",
+                "couleur": "#2468ac",
+            },
+        )
+
+        self.assertRedirects(
+            response,
+            reverse("articles:gestion_categories"),
+            fetch_redirect_response=False,
+        )
+        self.assertTrue(Categorie.objects.filter(slug="culture-locale").exists())
+        self.assertEqual(Article.objects.count(), 0)
+
+        response = self.client.get(reverse("articles:gestion_categories"))
+        self.assertContains(response, "Culture locale")
+
+    def test_new_article_page_renders_category_modal(self):
+        response = self.client.get(reverse("articles:creer_article"))
+
+        self.assertEqual(response.status_code, 200)
+        self.assertContains(response, 'id="modalNouvelleCategorie"')
+        self.assertContains(response, 'id="formNouvelleCategorie"')
+        self.assertContains(response, 'action="/redaction/categories/creer/"')
+
+    def test_modal_endpoint_returns_created_category_as_json(self):
+        response = self.client.post(
+            reverse("articles:creer_categorie_ajax"),
+            {
+                "nom": "Sciences et technologie",
+                "description": "Actualités scientifiques.",
+                "couleur": "#157347",
+            },
+            HTTP_X_REQUESTED_WITH="XMLHttpRequest",
+        )
+
+        self.assertEqual(response.status_code, 201)
+        self.assertEqual(response.json()["nom"], "Sciences et technologie")
+        self.assertTrue(
+            Categorie.objects.filter(slug="sciences-et-technologie").exists()
+        )

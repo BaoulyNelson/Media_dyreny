@@ -1,0 +1,79 @@
+{% extends "base.html" %}
+{% block titre %}{{ titre_page }}{% endblock %}
+{% block content %}
+<style>
+.category-manager { max-width: 1120px; margin: 0 auto; }
+.category-form-panel { background: #fff; border: 1px solid #e5e9ef; border-radius: 8px; padding: 1.5rem; }
+.category-color-swatch { width: 1rem; height: 1rem; flex: 0 0 1rem; border: 1px solid rgba(0,0,0,.12); border-radius: 50%; }
+</style>
+<div class="container py-4">
+  <div class="category-manager">
+    <div class="d-flex align-items-center gap-3 mb-4">
+      <a href="{% url 'articles:mes_articles' %}" class="btn btn-sm btn-outline-secondary" aria-label="Retour à l’espace rédaction">
+        <i class="bi bi-arrow-left"></i>
+      </a>
+      <div>
+        <h1 class="page-title mb-1">Gérer les catégories</h1>
+        <p class="text-muted mb-0">Ajoutez une catégorie avant de rédiger un article.</p>
+      </div>
+    </div>
+
+    <div class="row g-4">
+      <section class="col-lg-5" aria-labelledby="new-category-title">
+        <div class="category-form-panel">
+          <h2 class="h5 mb-3" id="new-category-title">Nouvelle catégorie</h2>
+          <form method="post" novalidate>
+            {% csrf_token %}
+            {% if form.non_field_errors %}<div class="alert alert-danger">{{ form.non_field_errors }}</div>{% endif %}
+
+            <div class="mb-3">
+              <label class="form-label" for="{{ form.nom.id_for_label }}">{{ form.nom.label }}</label>
+              {{ form.nom }}
+              {% if form.nom.errors %}<div class="text-danger small mt-1">{{ form.nom.errors.0 }}</div>{% endif %}
+            </div>
+
+            <div class="mb-3">
+              <label class="form-label" for="{{ form.description.id_for_label }}">{{ form.description.label }}</label>
+              {{ form.description }}
+              {% if form.description.errors %}<div class="text-danger small mt-1">{{ form.description.errors.0 }}</div>{% endif %}
+            </div>
+
+            <div class="mb-4">
+              <label class="form-label d-block" for="{{ form.couleur.id_for_label }}">{{ form.couleur.label }}</label>
+              {{ form.couleur }}
+              {% if form.couleur.errors %}<div class="text-danger small mt-1">{{ form.couleur.errors.0 }}</div>{% endif %}
+            </div>
+
+            <button type="submit" class="btn btn-accent w-100">
+              <i class="bi bi-plus-lg me-2"></i>Ajouter la catégorie
+            </button>
+          </form>
+        </div>
+      </section>
+
+      <section class="col-lg-7" aria-labelledby="categories-list-title">
+        <div class="d-flex align-items-center justify-content-between mb-3">
+          <h2 class="h5 mb-0" id="categories-list-title">Catégories existantes</h2>
+          <span class="badge text-bg-light">{{ categories|length }}</span>
+        </div>
+        {% if categories %}
+        <div class="list-group list-group-flush border-top">
+          {% for categorie in categories %}
+          <div class="list-group-item px-0 py-3 d-flex align-items-start gap-3">
+            <span class="category-color-swatch mt-1" style="background-color: {{ categorie.couleur }}"></span>
+            <div class="flex-grow-1 min-w-0">
+              <div class="fw-semibold">{{ categorie.nom }}</div>
+              {% if categorie.description %}<div class="small text-muted">{{ categorie.description|truncatechars:120 }}</div>{% endif %}
+            </div>
+            <span class="small text-muted text-nowrap">{{ categorie.nombre_utilisations }} article{{ categorie.nombre_utilisations|pluralize }}</span>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p class="text-muted border-top pt-3">Aucune catégorie pour le moment.</p>
+        {% endif %}
+      </section>
+    </div>
+  </div>
+</div>
+{% endblock %}
