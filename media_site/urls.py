@@ -26,6 +26,7 @@ admin.site.index_title = "Tableau de bord"
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path("ckeditor5/", include("django_ckeditor_5.urls")),
     path("", include("apps.articles.urls")),
     path("comptes/", include("apps.accounts.urls")),
     path("contact/", include("apps.contact.urls")),

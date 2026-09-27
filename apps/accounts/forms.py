@@ -3,6 +3,7 @@ from django.contrib.auth.models import User
 from django.contrib.auth.forms import (
     AuthenticationForm,
     PasswordResetForm,
+    SetPasswordForm,
     UserCreationForm,
 )
 from .models import ProfilUtilisateur
@@ -52,6 +53,24 @@ class StyledPasswordResetForm(PasswordResetForm):
             }
         ),
     )
+
+
+class StyledSetPasswordForm(SetPasswordForm):
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["new_password1"].widget.attrs.update(
+            {
+                "class": "form-control",
+                "placeholder": "Nouveau mot de passe",
+                "autofocus": True,
+            }
+        )
+        self.fields["new_password2"].widget.attrs.update(
+            {
+                "class": "form-control",
+                "placeholder": "Confirmer le nouveau mot de passe",
+            }
+        )
 
 
 class InscriptionForm(UserCreationForm):

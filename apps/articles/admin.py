@@ -1,6 +1,11 @@
 from django.contrib import admin
 from django.utils.html import format_html
-from .models import Article, Categorie, Tag, Comments
+from .models import Article, ArticleImage, Categorie, Tag, Comments
+
+
+class ArticleImageInline(admin.StackedInline):
+    model = ArticleImage
+    extra = 0
 
 
 @admin.register(Categorie)
@@ -30,6 +35,7 @@ class TagAdmin(admin.ModelAdmin):
 
 @admin.register(Article)
 class ArticleAdmin(admin.ModelAdmin):
+    inlines = [ArticleImageInline]
     list_display = [
         "titre",
         "auteur",

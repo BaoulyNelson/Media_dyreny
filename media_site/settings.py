@@ -1,17 +1,19 @@
-import os
 from pathlib import Path
-from dotenv import load_dotenv
+from decouple import config
 from django.contrib.messages import constants as messages_const
-
-load_dotenv()
 
 BASE_DIR = Path(__file__).resolve().parent.parent
 
-SECRET_KEY = os.getenv("SECRET_KEY", "fallback-key-change-in-production")
+SECRET_KEY = config("SECRET_KEY", default="fallback-key-change-in-production")
 
-DEBUG = os.getenv("DEBUG", "False") == "True"
+DEBUG = config("DEBUG", default=False, cast=bool)
 
-ALLOWED_HOSTS = os.getenv("ALLOWED_HOSTS", "localhost").split(",")
+ALLOWED_HOSTS = config(
+    "ALLOWED_HOSTS",
+    default="localhost",
+    cast=lambda value: [host.strip() for host in value.split(",") if host.strip()],
+)
+SITE_URL = config("SITE_URL", default="").rstrip("/")
 
 INSTALLED_APPS = [
     "django.contrib.admin",
@@ -21,6 +23,7 @@ INSTALLED_APPS = [
     "django.contrib.messages",
     "django.contrib.staticfiles",
     "django.contrib.humanize",
+    "django_ckeditor_5",
     "apps.core",
     "apps.articles",
     "apps.accounts",
@@ -65,11 +68,11 @@ WSGI_APPLICATION = "media_site.wsgi.application"
 DATABASES = {
     "default": {
         "ENGINE": "django.db.backends.mysql",
-        "NAME": os.getenv("DB_NAME", "media_site"),
-        "USER": os.getenv("DB_USER", "root"),
-        "PASSWORD": os.getenv("DB_PASSWORD", ""),
-        "HOST": os.getenv("DB_HOST", "127.0.0.1"),
-        "PORT": os.getenv("DB_PORT", "3306"),
+        "NAME": config("DB_NAME", default="media_site"),
+        "USER": config("DB_USER", default="root"),
+        "PASSWORD": config("DB_PASSWORD", default=""),
+        "HOST": config("DB_HOST", default="127.0.0.1"),
+        "PORT": config("DB_PORT", default="3306", cast=int),
         "OPTIONS": {
             "charset": "utf8mb4",
             "init_command": "SET sql_mode='STRICT_TRANS_TABLES'",
@@ -100,6 +103,28 @@ MEDIA_ROOT = BASE_DIR / "media"
 
 DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
+CKEDITOR_5_CONFIGS = {
+    "default": {
+        "language": "fr",
+        "toolbar": {
+            "items": [
+                "heading",
+                "|",
+                "bold",
+                "italic",
+                "underline",
+                "link",
+                "bulletedList",
+                "numberedList",
+                "blockQuote",
+                "|",
+                "undo",
+                "redo",
+            ]
+        },
+    }
+}
+
 LOGIN_URL = "/comptes/connexion/"
 LOGIN_REDIRECT_URL = "/"
 LOGOUT_REDIRECT_URL = "/"
@@ -112,13 +137,13 @@ CACHES = {
 }
 
 # ─── Email ────────────────────────────────────────────────────────────────────
-EMAIL_HOST = os.getenv("EMAIL_HOST", "smtp.gmail.com")
-EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
-EMAIL_USE_TLS = os.getenv("EMAIL_USE_TLS", "True").lower() in {"1", "true", "yes"}
-EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "").strip()
-EMAIL_HOST_PASSWORD = "".join(os.getenv("EMAIL_HOST_PASSWORD", "").split())
-DEFAULT_FROM_EMAIL = os.getenv(
-    "DEFAULT_FROM_EMAIL", EMAIL_HOST_USER or "webmaster@localhost"
+EMAIL_HOST = config("EMAIL_HOST", default="smtp.gmail.com")
+EMAIL_PORT = config("EMAIL_PORT", default=587, cast=int)
+EMAIL_USE_TLS = config("EMAIL_USE_TLS", default=True, cast=bool)
+EMAIL_HOST_USER = config("EMAIL_HOST_USER", default="").strip()
+EMAIL_HOST_PASSWORD = "".join(config("EMAIL_HOST_PASSWORD", default="").split())
+DEFAULT_FROM_EMAIL = config(
+    "DEFAULT_FROM_EMAIL", default=EMAIL_HOST_USER or "webmaster@localhost"
 )
 
 if DEBUG and not (EMAIL_HOST_USER and EMAIL_HOST_PASSWORD):

@@ -3,12 +3,16 @@ from django.views.generic import ListView, DetailView, TemplateView
 from django.contrib import messages
 from django.db.models import Q
 from django.conf import settings
+from django.utils.safestring import mark_safe
+import nh3
+from urllib.parse import urljoin
 from .models import Article, Categorie, Tag
 from .forms import CommentsForm, RechercheForm
 from django.views.generic import CreateView, UpdateView, DeleteView, ListView as LV2
 from django.urls import reverse_lazy
 from .forms import ArticleForm
 from .mixins import JournalisteRequiredMixin
+
 
 class AccueilView(TemplateView):
     template_name = "home.html"
@@ -51,8 +55,10 @@ class ArticleDetailView(DetailView):
     context_object_name = "article"
 
     def get_queryset(self):
-        return Article.objects.filter(statut="publie").select_related(
-            "auteur", "categorie"
+        return (
+            Article.objects.filter(statut="publie")
+            .select_related("auteur", "categorie")
+            .prefetch_related("images")
         )
 
     def get_object(self):
@@ -65,22 +71,66 @@ class ArticleDetailView(DetailView):
         article = self.object
         ctx["Commentss"] = article.Commentss_approuves()
         ctx["form_Comments"] = CommentsForm()
+        ctx["contenu_html"] = mark_safe(
+            nh3.clean(
+                article.contenu,
+                tags={
+                    "p",
+                    "br",
+                    "strong",
+                    "b",
+                    "em",
+                    "i",
+                    "u",
+                    "s",
+                    "del",
+                    "a",
+                    "h2",
+                    "h3",
+                    "h4",
+                    "blockquote",
+                    "ul",
+                    "ol",
+                    "li",
+                    "hr",
+                },
+                attributes={"a": {"href", "title", "target"}},
+                url_schemes={"http", "https", "mailto"},
+            )
+        )
         ctx["articles_similaires"] = (
             Article.objects.filter(statut="publie", categorie=article.categorie)
             .exclude(pk=article.pk)
             .order_by("-date_publication")[:3]
         )
+        site_url = getattr(settings, "SITE_URL", "").rstrip("/")
+        if site_url:
+            ctx["canonical_url"] = urljoin(
+                f"{site_url}/", article.get_absolute_url().lstrip("/")
+            )
+        else:
+            ctx["canonical_url"] = self.request.build_absolute_uri(
+                article.get_absolute_url()
+            )
+
+        image_url = article.get_image_url()
+        if image_url:
+            if site_url:
+                ctx["social_image_url"] = urljoin(f"{site_url}/", image_url)
+            else:
+                ctx["social_image_url"] = self.request.build_absolute_uri(image_url)
+        else:
+            ctx["social_image_url"] = ""
+        ctx["social_image_alt"] = article.titre
         return ctx
-
-
 
     def post(self, request, *args, **kwargs):
         if not request.user.is_authenticated:
             messages.warning(request, "Vous devez être connecté pour commenter.")
             return redirect("accounts:connexion")
 
-        self.object = self.get_object()   # ← self.object au lieu de article = ...
-        article = self.object             # alias pratique
+        self.object = self.get_object()  # ← self.object au lieu de article = ...
+        article = self.object  # alias pratique
 
         form = CommentsForm(request.POST)
         if form.is_valid():
@@ -91,12 +141,9 @@ class ArticleDetailView(DetailView):
             messages.success(request, "Votre commentaire a été publié avec succès.")
             return redirect(article.get_absolute_url())
 
-        ctx = self.get_context_data()     # ✅ self.object existe maintenant
+        ctx = self.get_context_data()  # ✅ self.object existe maintenant
         ctx["form_Comments"] = form
         return render(request, self.template_name, ctx)
-
-
-
 
 
 class ArticleParCategorieView(ListView):
@@ -179,20 +226,26 @@ def error_500(request):
 # ─── PUBLICATION D'ARTICLES (journalistes accrédités uniquement) ─────────────
 class MesArticlesView(JournalisteRequiredMixin, LV2):
     model = Article
-    template_name = 'articles/mes_articles.html'
-    context_object_name = 'articles'
+    template_name = "articles/mes_articles.html"
+    context_object_name = "articles"
     paginate_by = 10
 
     def get_queryset(self):
-        return Article.objects.filter(auteur=self.request.user).order_by('-date_creation')
+        return Article.objects.filter(auteur=self.request.user).order_by(
+            "-date_creation"
+        )
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        ctx['titre_page'] = 'Mes articles'
-        ctx['stats'] = {
-            'total': Article.objects.filter(auteur=self.request.user).count(),
-            'publies': Article.objects.filter(auteur=self.request.user, statut='publie').count(),
-            'brouillons': Article.objects.filter(auteur=self.request.user, statut='brouillon').count(),
+        ctx["titre_page"] = "Mes articles"
+        ctx["stats"] = {
+            "total": Article.objects.filter(auteur=self.request.user).count(),
+            "publies": Article.objects.filter(
+                auteur=self.request.user, statut="publie"
+            ).count(),
+            "brouillons": Article.objects.filter(
+                auteur=self.request.user, statut="brouillon"
+            ).count(),
         }
         return ctx
 
@@ -200,7 +253,7 @@ class MesArticlesView(JournalisteRequiredMixin, LV2):
 class CreerArticleView(JournalisteRequiredMixin, CreateView):
     model = Article
     form_class = ArticleForm
-    template_name = 'articles/form_article.html'
+    template_name = "articles/form_article.html"
 
     def form_valid(self, form):
         form.instance.auteur = self.request.user
@@ -208,19 +261,19 @@ class CreerArticleView(JournalisteRequiredMixin, CreateView):
         return super().form_valid(form)
 
     def get_success_url(self):
-        return reverse_lazy('articles:mes_articles')
+        return reverse_lazy("articles:mes_articles")
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        ctx['titre_page'] = 'Nouvel article'
-        ctx['action'] = 'Créer'
+        ctx["titre_page"] = "Nouvel article"
+        ctx["action"] = "Créer"
         return ctx
 
 
 class ModifierArticleView(JournalisteRequiredMixin, UpdateView):
     model = Article
     form_class = ArticleForm
-    template_name = 'articles/form_article.html'
+    template_name = "articles/form_article.html"
 
     def get_queryset(self):
         # Un journaliste ne peut modifier que ses propres articles
@@ -233,19 +286,19 @@ class ModifierArticleView(JournalisteRequiredMixin, UpdateView):
         return super().form_valid(form)
 
     def get_success_url(self):
-        return reverse_lazy('articles:mes_articles')
+        return reverse_lazy("articles:mes_articles")
 
     def get_context_data(self, **kwargs):
         ctx = super().get_context_data(**kwargs)
-        ctx['titre_page'] = f"Modifier : {self.object.titre}"
-        ctx['action'] = 'Modifier'
+        ctx["titre_page"] = f"Modifier : {self.object.titre}"
+        ctx["action"] = "Modifier"
         return ctx
 
 
 class SupprimerArticleView(JournalisteRequiredMixin, DeleteView):
     model = Article
-    template_name = 'articles/confirmer_suppression.html'
-    success_url = reverse_lazy('articles:mes_articles')
+    template_name = "articles/confirmer_suppression.html"
+    success_url = reverse_lazy("articles:mes_articles")
 
     def get_queryset(self):
         if self.request.user.is_staff:
@@ -255,5 +308,3 @@ class SupprimerArticleView(JournalisteRequiredMixin, DeleteView):
     def form_valid(self, form):
         messages.success(self.request, "Article supprimé.")
         return super().form_valid(form)
-
-

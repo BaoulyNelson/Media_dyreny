@@ -4,6 +4,45 @@ from django.urls import reverse
 from django.utils.text import slugify
 from django.utils import timezone
 import re
+from io import BytesIO
+import sys
+from PIL import Image
+from django.core.files.uploadedfile import InMemoryUploadedFile
+
+
+def compresser_image(champ_image, largeur_max=1200, qualite=80):
+    """
+    Compresse et convertit en JPEG une image liée à un ImageField,
+    si un nouveau fichier vient d'être uploadé (hasattr(champ_image, 'file')
+    est vérifié par l'appelant). Retourne le fichier prêt à assigner
+    au champ, ou None si rien à faire.
+    """
+    if not champ_image or not hasattr(champ_image, 'file'):
+        return None
+
+    try:
+        img = Image.open(champ_image)
+    except Exception:
+        return None
+
+    if img.mode != 'RGB':
+        img = img.convert('RGB')
+
+    if img.width > largeur_max:
+        ratio = largeur_max / img.width
+        nouvelle_hauteur = int(img.height * ratio)
+        img = img.resize((largeur_max, nouvelle_hauteur), Image.LANCZOS)
+
+    buffer = BytesIO()
+    img.save(buffer, format='JPEG', quality=qualite, optimize=True)
+    buffer.seek(0)
+
+    nom_fichier = champ_image.name.rsplit('.', 1)[0] + '.jpg'
+
+    return InMemoryUploadedFile(
+        buffer, 'ImageField', nom_fichier, 'image/jpeg',
+        sys.getsizeof(buffer), None
+    )
 
 
 class Categorie(models.Model):
@@ -118,6 +157,10 @@ class Article(models.Model):
             self.slug = slug
         if self.statut == "publie" and not self.date_publication:
             self.date_publication = timezone.now()
+        if self.image and hasattr(self.image, 'file'):
+            nouveau = compresser_image(self.image, largeur_max=1200)
+            if nouveau:
+                self.image = nouveau
         super().save(*args, **kwargs)
 
     def get_absolute_url(self):
@@ -131,6 +174,10 @@ class Article(models.Model):
             return self.image.url
         if self.image_url:
             return self.image_url
+        if self.pk:
+            gallery_image = next(iter(self.images.all()), None)
+            if gallery_image:
+                return gallery_image.image.url
         return None
 
     def temps_lecture(self):
@@ -140,6 +187,32 @@ class Article(models.Model):
 
     def Commentss_approuves(self):
         return self.Commentss.filter(approuve=True)
+
+
+class ArticleImage(models.Model):
+    article = models.ForeignKey(
+        Article, on_delete=models.CASCADE, related_name="images"
+    )
+    image = models.ImageField(upload_to="articles/%Y/%m/gallery/")
+    alt_text = models.CharField(
+        max_length=250, blank=True, verbose_name="Texte alternatif"
+    )
+    position = models.PositiveSmallIntegerField(default=0, verbose_name="Position")
+
+    class Meta:
+        ordering = ["position", "id"]
+        verbose_name = "Image d’article"
+        verbose_name_plural = "Images d’article"
+
+    def __str__(self):
+        return self.alt_text or self.image.name.rsplit("/", 1)[-1]
+
+    def save(self, *args, **kwargs):
+        if self.image and hasattr(self.image, 'file'):
+            nouveau = compresser_image(self.image, largeur_max=1600)
+            if nouveau:
+                self.image = nouveau
+        super().save(*args, **kwargs)
 
 
 class Comments(models.Model):

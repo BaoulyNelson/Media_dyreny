@@ -27,9 +27,11 @@ class ConnexionView(LoginView):
 
 class DeconnexionView(LogoutView):
     def dispatch(self, request, *args, **kwargs):
-        if request.user.is_authenticated:
-            messages.info(request, "Vous avez été déconnecté avec succès.")
-        return super().dispatch(request, *args, **kwargs)
+        was_authenticated = request.user.is_authenticated
+        response = super().dispatch(request, *args, **kwargs)
+        if was_authenticated:
+            messages.success(request, "Vous avez été déconnecté avec succès.")
+        return response
 
 
 class InscriptionView(CreateView):
